@@ -1,0 +1,73 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Jira EVM Visualizer",
+    "tags": ["evm", "jira", "ims"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "title": "Total Tasks by Level",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "sum(evm_tasks_total) by (level)",
+            "legendFormat": "{{level}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "title": "Schedule On Track Ratio",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "evm_schedule_on_track_ratio",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "title": "Schedule Variance (Days)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "evm_schedule_variance_days",
+            "legendFormat": "{{id}} - {{type}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "title": "Data Refresh Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(evm_data_refresh_total[5m])",
+            "legendFormat": "{{source}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "title": "Refresh Duration (seconds)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "evm_data_refresh_duration_seconds",
+            "legendFormat": "{{source}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ]
+  },
+  "overwrite": true
+}
