@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira EVM Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        header {
+            background: #0f172a;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1e3a8a;
+        }
+        button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+        .status {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        #myGrid {
+            width: 100%;
+            height: calc(100vh - 130px);
+            margin: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metric {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .on-track { background: #dcfce7; color: #166534; }
+        .behind { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Jira EVM Visualizer</h1>
+            <span style="font-size: 0.8rem; opacity: 0.7;">IMS Schedule + Jira Hierarchy</span>
+        </div>
+        <div class="controls">
+            <span id="lastUpdated" class="status"></span>
+            <button id="refreshBtn" onclick="refreshData()">Refresh Data</button>
+            <a href="/metrics" target="_blank" style="color:#94a3b8; font-size:0.8rem; text-decoration:none;">Metrics →</a>
+        </div>
+    </header>
+
+    <div id="myGrid" class="ag-theme-alpine"></div>
+
+    <script>
+        let gridApi;
+
+        const columnDefs = [
+            { field: 'name', headerName: 'Task / Issue', flex: 3, filter: true, cellRenderer: 'agGroupCellRenderer' },
+            { field: 'jira_key', headerName: 'Jira Key', width: 120 },
+            { field: 'ims_id', headerName: 'IMS ID', width: 110 },
+            { 
+                field: 'baseline_finish', 
+                headerName: 'Baseline Finish', 
+                width: 130,
+                valueFormatter: params => params.value ? new Date(params.value).toLocaleDateString() : ''
+            },
+            { 
+                field: 'forecast_finish', 
+                headerName: 'Forecast Finish', 
+                width: 130,
+                valueFormatter: params => params.value ? new Date(params.value).toLocaleDateString() : ''
+            },
+            { 
+                field: 'percent_complete', 
+                headerName: '% Complete', 
+                width: 110,
+                valueFormatter: params => params.value ? params.value + '%' : '0%'
+            },
+            { field: 'status', headerName: 'Status', width: 120 },
+            {
+                headerName: 'Schedule Variance',
+                field: 'schedule_variance',
+                width: 160,
+                cellRenderer: params => {
+                    if (!params.value) return '';
+                    const sv = params.value;
+                    const text = `${sv.finish_variance_days ?? 0}d`;
+                    const cls = sv.is_on_track ? 'on-track' : 'behind';
+                    return `<span class="metric ${cls}">${text}</span>`;
+                }
+            }
+        ];
+
+        const gridOptions = {
+            columnDefs: columnDefs,
+            defaultColDef: {
+                sortable: true,
+                filter: true,
+                resizable: true,
+            },
+            treeData: true,
+            getDataPath: data => {
+                // Build path for AG-Grid tree data
+                // We use the id as the node key
+                return [data.id];
+            },
+            getRowId: params => params.data.id,
+            animateRows: true,
+            groupDefaultExpanded: 1,
+            rowSelection: 'multiple',
+            suppressRowClickSelection: true,
+            onGridReady: function (params) {
+                gridApi = params.api;
+                loadData();
+            }
+        };
+
+        // Initialize AG-Grid
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridDiv = document.querySelector('#myGrid');
+            agGrid.createGrid(gridDiv, gridOptions);
+
+            // Initial load (will show empty state + button if nothing loaded)
+            loadData();
+
+            // Optional: Auto-load sample data the very first time for great demo experience
+            // Comment this out in production if you don't want auto-load
+            setTimeout(() => {
+                // Only auto-refresh if we still have no data after 1.5s
+                if (gridApi && gridApi.getDisplayedRowCount() === 0) {
+                    console.log('%c[Demo] Auto-triggering sample data load...', 'color:#64748b');
+                    refreshData();
+                }
+            }, 1500);
+        });
+
+        async function loadData(showLoading = false) {
+            const statusEl = document.getElementById('lastUpdated');
+
+            try {
+                if (showLoading) statusEl.textContent = 'Loading...';
+
+                const response = await fetch('/api/v1/data/hierarchy');
+                const treeData = await response.json();
+
+                if (!treeData || treeData.length === 0) {
+                    // Show nice empty state
+                    gridApi.setGridOption('rowData', []);
+                    statusEl.innerHTML = `
+                        <span style="color:#b45309">No data loaded yet.</span> 
+                        <button onclick="refreshData()" style="margin-left:8px;padding:4px 10px;font-size:0.8rem">Load Sample Data</button>
+                    `;
+                    return;
+                }
+
+                const flatData = flattenTree(treeData);
+                gridApi.setGridOption('rowData', flatData);
+                statusEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            } catch (err) {
+                console.error(err);
+                statusEl.textContent = 'Error loading data';
+            }
+        }
+
+        function flattenTree(nodes, result = []) {
+            for (const node of nodes) {
+                result.push(node.data);
+                if (node.children && node.children.length > 0) {
+                    flattenTree(node.children, result);
+                }
+            }
+            return result;
+        }
+
+        async function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            const statusEl = document.getElementById('lastUpdated');
+
+            btn.disabled = true;
+            btn.textContent = 'Refreshing...';
+            statusEl.textContent = 'Refreshing data in background...';
+
+            try {
+                const res = await fetch('/api/v1/refresh', { method: 'POST' });
+                const data = await res.json();
+                console.log('Refresh scheduled:', data);
+
+                // Give the background task time to complete, then reload
+                setTimeout(() => loadData(true), 900);
+                setTimeout(() => {
+                    loadData(true);
+                    btn.disabled = false;
+                    btn.textContent = 'Refresh Data';
+                }, 2000);
+
+            } catch (e) {
+                console.error(e);
+                alert('Network error during refresh');
+                btn.disabled = false;
+                btn.textContent = 'Refresh Data';
+                statusEl.textContent = 'Refresh failed';
+            }
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', e => {
+            if (e.metaKey && e.key === 'r') {
+                e.preventDefault();
+                refreshData();
+            }
+        });
+    </script>
+</body>
+</html>

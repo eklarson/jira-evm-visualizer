@@ -1,0 +1,1 @@
+"""jira-evm-visualizer FastAPI application."""
