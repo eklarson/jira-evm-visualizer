@@ -1,0 +1,55 @@
+services:
+  visualizer:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=INFO
+      # Point to the mounted sample IMS XML inside the container.
+      # This makes the auto-refresh load real IMS data instead of only the 3 stub Jira tasks.
+      - IMS_XML_PATH=/samples/sample_ims_export.xml
+    volumes:
+      # Provide the IMS sample via env var for convenience:
+      #   IMS_XML_HOST_PATH=/absolute/path/to/sample_ims_export.xml docker compose up --build
+      #
+      # The sample must exist on the host at that path, otherwise Docker will fail to start.
+      # Recommended: copy the sample from the pipeline project first:
+      #   cp ../jira-evm-pipeline/tests/fixtures/sample_ims_export.xml .
+      - ${IMS_XML_HOST_PATH:-./sample_ims_export.xml}:/samples/sample_ims_export.xml:ro
+    # Uncomment if you want to mount local code for development
+    # volumes:
+    #   - .:/app
+    # (No depends_on here — the app runs independently)
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:

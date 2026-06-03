@@ -7,6 +7,7 @@ Main entry point. Provides:
 - Static frontend (AG-Grid dashboard)
 """
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -135,11 +136,17 @@ async def trigger_refresh(
     jira-evm-pipeline project (great for demos).
     """
     if ims_path is None:
-        # Convenient default for development/demo
-        default_sample = Path(__file__).parent.parent.parent / "jira-evm-pipeline/tests/fixtures/sample_ims_export.xml"
-        if default_sample.exists():
-            ims_path = str(default_sample)
-            logger.info(f"Using default sample IMS file: {ims_path}")
+        # 1. Check environment variable (best for Docker / configured environments)
+        env_path = os.environ.get("IMS_XML_PATH")
+        if env_path and Path(env_path).exists():
+            ims_path = env_path
+            logger.info(f"Using IMS_XML_PATH from environment: {ims_path}")
+        else:
+            # 2. Fall back to sibling project sample (good for local non-Docker dev)
+            default_sample = Path(__file__).parent.parent.parent / "jira-evm-pipeline/tests/fixtures/sample_ims_export.xml"
+            if default_sample.exists():
+                ims_path = str(default_sample)
+                logger.info(f"Using default sample IMS file: {ims_path}")
 
     background_tasks.add_task(refresh_all_data, ims_path)
     return {"status": "refresh_scheduled", "ims_path_used": ims_path}
