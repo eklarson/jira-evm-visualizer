@@ -35,6 +35,8 @@ class JiraService:
         logger.warning("JiraService is using stub data. Implement real integration.")
 
         # TODO: Replace with real data from Jira
+        # NOTE: parent_key values must match the *final id* that will be assigned
+        #       to the parent item (ims_id is preferred over key in the combiner).
         sample = [
             JiraIssue(
                 key="PROJ-100",
@@ -49,7 +51,7 @@ class JiraService:
                 summary="Requirements Definition Epic",
                 issuetype="Epic",
                 status="Done",
-                parent_key="PROJ-100",
+                parent_key="IMS-1001",   # must match the *id* chosen for the parent (ims_id takes precedence)
                 ims_id="IMS-2001",
                 level=1,
             ),
@@ -58,7 +60,7 @@ class JiraService:
                 summary="Define system requirements",
                 issuetype="Story",
                 status="Done",
-                parent_key="PROJ-101",
+                parent_key="IMS-2001",   # must match the *id* chosen for the epic
                 level=2,
             ),
         ]

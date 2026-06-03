@@ -4,11 +4,13 @@ Modern FastAPI + AG-Grid dashboard for visualizing Earned Value Management data 
 
 ## Features
 
-- **Hierarchical AG-Grid view** — Capability → Epic → Story with tree expansion
+- **Hierarchical AG-Grid view** — Capability → Epic → Story with real tree expansion (expand/collapse, proper indentation)
 - **IMS + Jira data fusion** using IMS ID as the join key
-- **Baseline vs Forecast dates** with schedule variance calculation
+- **Baseline vs Forecast dates** (start + finish) with schedule variance calculation
+- **UI controls** — optional IMS XML path input on refresh + CSV export of current (filtered) view
 - **Prometheus metrics** at `/metrics` (ready for Grafana)
 - **Refresh endpoints** for pulling latest IMS XML and Jira data
+- **Additional columns** — Level (friendly names), Start dates, improved variance badges
 
 ## Quick Start
 
@@ -25,6 +27,14 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 Then open http://localhost:8000
+
+### Using the Dashboard
+
+- **Refresh Data**: Triggers a background load of IMS + Jira data. 
+- **IMS path input**: Optionally paste a path to a specific `.xml` IMS export before clicking Refresh (the value is remembered in your browser).
+- **Tree view**: The grid now properly supports expanding/collapsing the Capability → Epic → Story hierarchy.
+- **Export CSV**: Exports the currently visible (filtered/sorted) rows.
+- **Auto demo**: If no data is present on load, it will attempt to pull the sample after a short delay.
 
 ## Monitoring with Prometheus + Grafana
 
@@ -112,9 +122,9 @@ app/
 ├── models/                 # Pydantic models (IMS, Jira, Combined)
 ├── services/
 │   ├── ims_parser.py       # Microsoft Project XML parser (adapted from pipeline)
-├── jira_service.py     # Jira integration (stub ready for your wrapper)
-├── data_combiner.py    # Merges IMS + Jira into tree structure
-├── metrics.py          # Prometheus business metrics
+│   ├── jira_service.py     # Jira integration (stub ready for your wrapper)
+│   ├── data_combiner.py    # Merges IMS + Jira into tree structure
+│   ├── metrics.py          # Prometheus business metrics
 ├── routers/
 │   ├── data.py             # /hierarchy, /flat endpoints
 │   └── metrics.py

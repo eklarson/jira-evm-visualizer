@@ -83,3 +83,7 @@ cython_debug/
 *.xls
 *.csv
 !sample_ims_export.xlsx
+
+# Local IMS sample XML (docker compose creates a dir here if the host file is missing)
+sample_ims_export.xml
+sample_ims_export.xml/
