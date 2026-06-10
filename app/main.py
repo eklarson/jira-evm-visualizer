@@ -6,6 +6,9 @@ Main entry point. Provides:
 - Prometheus /metrics endpoint
 - Static frontend (AG-Grid dashboard)
 """
+
+from __future__ import annotations
+
 import logging
 import os
 import time
@@ -143,7 +146,10 @@ async def trigger_refresh(
             logger.info(f"Using IMS_XML_PATH from environment: {ims_path}")
         else:
             # 2. Fall back to sibling project sample (good for local non-Docker dev)
-            default_sample = Path(__file__).parent.parent.parent / "jira-evm-pipeline/tests/fixtures/sample_ims_export.xml"
+            default_sample = (
+                Path(__file__).parent.parent.parent
+                / "jira-evm-pipeline/tests/fixtures/sample_ims_export.xml"
+            )
             if default_sample.exists():
                 ims_path = str(default_sample)
                 logger.info(f"Using default sample IMS file: {ims_path}")

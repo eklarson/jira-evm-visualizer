@@ -5,6 +5,9 @@ Adapted from the proven MSProjectXMLParser in jira-evm-pipeline.
 This version returns strongly-typed Pydantic models and is designed
 to be called from FastAPI background tasks / refresh endpoints.
 """
+
+from __future__ import annotations
+
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime

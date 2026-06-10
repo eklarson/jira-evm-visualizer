@@ -4,6 +4,9 @@ Data Combiner Service
 Merges IMS schedule data with Jira hierarchy using IMS ID as the join key.
 Produces the tree structure expected by the AG-Grid frontend.
 """
+
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from datetime import datetime
@@ -31,15 +34,12 @@ class DataCombinerService:
         """
         Main entry point. Returns a tree ready for AG-Grid tree data mode.
         """
-        logger.info(f"Combining {len(ims_tasks)} IMS tasks with {len(jira_issues)} Jira issues")
+        logger.info(
+            f"Combining {len(ims_tasks)} IMS tasks with {len(jira_issues)} Jira issues"
+        )
 
         # Index by IMS ID for joining
-        jira_by_ims_id: dict[str, JiraIssue] = {
-            j.ims_id: j for j in jira_issues if j.ims_id
-        }
-        ims_by_ims_id: dict[str, IMSTask] = {
-            t.ims_id: t for t in ims_tasks if t.ims_id
-        }
+        ims_by_ims_id: dict[str, IMSTask] = {t.ims_id: t for t in ims_tasks if t.ims_id}
 
         # Also index Jira by key for parent relationships
         jira_by_key: dict[str, JiraIssue] = {j.key: j for j in jira_issues}
@@ -49,7 +49,9 @@ class DataCombinerService:
         # First pass: create CombinedTask from Jira issues (they define the hierarchy)
         for jira_issue in jira_issues:
             key = jira_issue.ims_id or jira_issue.key
-            ims_task = ims_by_ims_id.get(jira_issue.ims_id) if jira_issue.ims_id else None
+            ims_task = (
+                ims_by_ims_id.get(jira_issue.ims_id) if jira_issue.ims_id else None
+            )
 
             combined = CombinedTask(
                 id=key,
@@ -61,8 +63,10 @@ class DataCombinerService:
                 ims_uid=ims_task.uid if ims_task else None,
                 baseline_start=ims_task.baseline_start if ims_task else None,
                 baseline_finish=ims_task.baseline_finish if ims_task else None,
-                forecast_start=jira_issue.forecast_start or (ims_task.start if ims_task else None),
-                forecast_finish=jira_issue.forecast_finish or (ims_task.finish if ims_task else None),
+                forecast_start=jira_issue.forecast_start
+                or (ims_task.start if ims_task else None),
+                forecast_finish=jira_issue.forecast_finish
+                or (ims_task.finish if ims_task else None),
                 percent_complete=ims_task.percent_complete if ims_task else 0.0,
                 status=jira_issue.status,
                 schedule_variance=self._calculate_variance(ims_task),
@@ -94,12 +98,22 @@ class DataCombinerService:
 
         return tree
 
-    def _calculate_variance(self, ims_task: Optional[IMSTask]) -> Optional[ScheduleVariance]:
+    def _calculate_variance(
+        self, ims_task: Optional[IMSTask]
+    ) -> Optional[ScheduleVariance]:
         if not ims_task or not ims_task.baseline_start or not ims_task.start:
             return None
 
-        start_var = (ims_task.start - ims_task.baseline_start).days if ims_task.start and ims_task.baseline_start else None
-        finish_var = (ims_task.finish - ims_task.baseline_finish).days if ims_task.finish and ims_task.baseline_finish else None
+        start_var = (
+            (ims_task.start - ims_task.baseline_start).days
+            if ims_task.start and ims_task.baseline_start
+            else None
+        )
+        finish_var = (
+            (ims_task.finish - ims_task.baseline_finish).days
+            if ims_task.finish and ims_task.baseline_finish
+            else None
+        )
 
         return ScheduleVariance(
             start_variance_days=start_var,
@@ -127,7 +141,11 @@ class DataCombinerService:
             return node
 
         # Roots are items with no parent or parent not in the dataset
-        roots = [item for item in items if not item.parent_id or item.parent_id not in {i.id for i in items}]
+        roots = [
+            item
+            for item in items
+            if not item.parent_id or item.parent_id not in {i.id for i in items}
+        ]
         return [build_node(r) for r in roots]
 
     def get_cached_tree(self) -> Optional[list[HierarchyNode]]:

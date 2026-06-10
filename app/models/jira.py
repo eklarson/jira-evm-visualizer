@@ -1,4 +1,7 @@
 """Pydantic models for Jira issues (Capability / Epic / Story hierarchy)."""
+
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional
 
@@ -27,6 +30,4 @@ class JiraIssue(BaseModel):
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}

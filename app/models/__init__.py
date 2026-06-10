@@ -1,4 +1,5 @@
 """Data models for jira-evm-visualizer."""
+
 from .ims import IMSTask
 
 from .jira import JiraIssue

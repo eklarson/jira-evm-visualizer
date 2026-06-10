@@ -1,8 +1,10 @@
 """Data API endpoints (combined IMS + Jira view)."""
+
+from __future__ import annotations
+
 from fastapi import APIRouter
 
 from app.models.combined import HierarchyNode
-from app.services.data_combiner import DataCombinerService
 
 router = APIRouter()
 

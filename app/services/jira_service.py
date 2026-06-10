@@ -4,6 +4,9 @@ Jira Service
 Responsible for fetching Capability → Epic → Story hierarchy from Jira
 and enriching with custom fields (especially IMS ID, Forecast dates).
 """
+
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
@@ -25,7 +28,9 @@ class JiraService:
     def __init__(self, jira_client=None):
         self.client = jira_client  # Will be your existing wrapper
 
-    async def fetch_hierarchy(self, project_key: Optional[str] = None) -> list[JiraIssue]:
+    async def fetch_hierarchy(
+        self, project_key: Optional[str] = None
+    ) -> list[JiraIssue]:
         """
         Fetch Capability → Epic → Story hierarchy.
 
@@ -51,7 +56,7 @@ class JiraService:
                 summary="Requirements Definition Epic",
                 issuetype="Epic",
                 status="Done",
-                parent_key="IMS-1001",   # must match the *id* chosen for the parent (ims_id takes precedence)
+                parent_key="IMS-1001",  # must match the *id* chosen for the parent (ims_id takes precedence)
                 ims_id="IMS-2001",
                 level=1,
             ),
@@ -60,7 +65,7 @@ class JiraService:
                 summary="Define system requirements",
                 issuetype="Story",
                 status="Done",
-                parent_key="IMS-2001",   # must match the *id* chosen for the epic
+                parent_key="IMS-2001",  # must match the *id* chosen for the epic
                 level=2,
             ),
         ]

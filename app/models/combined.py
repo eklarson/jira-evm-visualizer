@@ -1,12 +1,16 @@
 """Combined models that merge IMS schedule data with Jira issue data."""
+
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 
 class ScheduleVariance(BaseModel):
     """Calculated schedule variance metrics."""
+
     start_variance_days: Optional[int] = None
     finish_variance_days: Optional[int] = None
     is_on_track: bool = True
@@ -46,12 +50,11 @@ class CombinedTask(BaseModel):
     children_count: int = 0
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}
 
 
 class HierarchyNode(BaseModel):
     """Tree structure returned by the API (used by AG-Grid tree data mode)."""
+
     data: CombinedTask
     children: list["HierarchyNode"] = Field(default_factory=list)

@@ -1,4 +1,7 @@
 """Pydantic models for Microsoft Project IMS data."""
+
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional
 
@@ -20,7 +23,9 @@ class IMSTask(BaseModel):
     percent_complete: float = Field(default=0.0)
 
     # Custom fields resolved by the parser
-    ims_id: Optional[str] = Field(None, description="The key field used to match to Jira (e.g. 'IMS-2001')")
+    ims_id: Optional[str] = Field(
+        None, description="The key field used to match to Jira (e.g. 'IMS-2001')"
+    )
     control_account: Optional[str] = None
     work_package: Optional[str] = None
 
@@ -30,6 +35,4 @@ class IMSTask(BaseModel):
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        json_encoders = {datetime: lambda v: v.isoformat() if v else None}

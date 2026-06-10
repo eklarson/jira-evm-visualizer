@@ -4,6 +4,9 @@ Prometheus Metrics for EVM Visualizer
 Exposes business-relevant metrics that can be scraped by Prometheus
 and visualized in Grafana.
 """
+
+from __future__ import annotations
+
 from prometheus_client import Counter, Gauge, Histogram, Info
 
 # --- Business Metrics ---
@@ -51,7 +54,9 @@ def update_task_counts(combined_tree: list) -> None:
 
     def walk(nodes):
         for node in nodes:
-            level_name = {0: "capability", 1: "epic", 2: "story"}.get(node.data.level, "unknown")
+            level_name = {0: "capability", 1: "epic", 2: "story"}.get(
+                node.data.level, "unknown"
+            )
             tasks_total.labels(level=level_name, status=node.data.status).inc()
             if node.children:
                 walk(node.children)
